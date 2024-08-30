@@ -1,0 +1,13 @@
+astro
+.git
+.env
+airflow_settings.yaml
+logs/
+imgs/
+.pre-commit-config.yaml
+exercise.pdf
+LICENSE
+database.ipynb
+airflow_vars.json
+.python-version
+imgs/
