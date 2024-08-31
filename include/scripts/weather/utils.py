@@ -11,7 +11,7 @@ from airflow.models import Variable
 
 from include.scripts.weather.client import WeatherClient, WeatherEndpoints
 
-NULL_VALUE: str = "null"
+NULL_VALUE = None
 SELECTED_STATION_ID: str = "0112W"
 DUCK_DB: str = "include/database/duck.db"
 
@@ -86,13 +86,14 @@ def extract_weather_obs_data(ts: str, start: str) -> str:
         endpoint=station_obs_endpoint, params=params
     )
 
-    if len(data) == 0:
-        logging.info("No new data to ingest.")
-        raise AirflowSkipException("Skipping downstream tasks.")
-
     extracted_data: List[Dict[str, str]] = [
         extract_weather_fields(feature) for feature in data["features"]
     ]
+
+    if len(extracted_data) == 0:
+        logging.info("No new data to ingest.")
+        raise AirflowSkipException("Skipping downstream tasks.")
+
     extracted_data_sorted = sorted(
         extracted_data, key=lambda x: x["observation_timestamp"]
     )
@@ -186,9 +187,9 @@ def extract_weather_fields(feature: Dict[str, Any]) -> Dict[str, Union[str, floa
         "latitude": latitude,
         "longitude": longitude,
         "observation_timestamp": observation_timestamp,
-        "temperature": cast_none_values(temperature),
-        "wind_speed": cast_none_values(wind_speed),
-        "humidity": cast_none_values(humidity),
+        "temperature": temperature,
+        "wind_speed": wind_speed,
+        "humidity": humidity,
     }
 
 
@@ -210,18 +211,6 @@ def extract_stations_fields(properties: Dict[str, Any]) -> Dict[str, str]:
         "station_name": station_name,
         "station_timezone": station_timezone,
     }
-
-
-def cast_none_values(value: float) -> Union[str, float]:
-    """Cast none values to standatize the extraction.
-
-    Args:
-        `value`: Value to apply the cast.
-
-    Returns:
-        The `NULL_VALUE` if the value is None otherwise reuturn the value.
-    """
-    return NULL_VALUE if value is None else value
 
 
 def save_data_to_disk(data: List[Dict[str, Any]], table_name: str, ts: str) -> str:

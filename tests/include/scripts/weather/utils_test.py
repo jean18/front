@@ -53,20 +53,6 @@ class TestUtils(TestCase):
         expected_response: str = "2024-08-29T02:40:01+00:00"
         assert response == expected_response
 
-    def test_cast_none_values(self) -> None:
-        """Test for cast_none_values function."""
-        value_none = None
-        response_none: str = utils.cast_none_values(value=value_none)
-        expected_response_none: str = NULL_VALUE
-
-        assert response_none == expected_response_none
-
-        value_float: float = 1.36
-        response_float: float = utils.cast_none_values(value=value_float)
-        expected_response_float: float = 1.36
-
-        assert response_float == expected_response_float
-
     def test_extract_weather_fields(self) -> None:
         """Test for extract_weather_fields function."""
         feature: Dict[str, Any] = {
@@ -323,7 +309,7 @@ class TestUtils(TestCase):
         )
 
         # When there is no new data to ingest
-        make_request_mock.make_request.return_value = []
+        make_request_mock.make_request.return_value = {"features": []}
         try:
             utils.extract_weather_obs_data(ts=self.ts, start=self.start_date)
         except AirflowSkipException as error:
