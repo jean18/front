@@ -1,5 +1,4 @@
 """Script to test DAG utils functions."""
-
 from datetime import datetime, timedelta
 from typing import Any, Dict
 from unittest import TestCase

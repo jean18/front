@@ -1,5 +1,4 @@
 """Script to test WeatherClient class."""
-
 from typing import Any, Dict
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch

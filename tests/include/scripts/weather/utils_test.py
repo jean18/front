@@ -1,5 +1,5 @@
 """Script to test utils for weather API pipeline."""
-
+import os
 from typing import Any, Dict, List, Union
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, call, patch
 from airflow.exceptions import AirflowSkipException
 
 import include.scripts.weather.utils as utils
+from include.scripts.weather.client import WeatherEndpoints
 from include.scripts.weather.utils import DUCK_DB, NULL_VALUE, SELECTED_STATION_ID
 
 
@@ -239,33 +240,93 @@ class TestUtils(TestCase):
         weather_client_mock: MagicMock,
     ) -> None:
         """Test for extract_stations_data function."""
+        raw_file_path: str = "path/raw_file_mock.parquet"
+        save_data_to_disk_mock.return_value = raw_file_path
+
+        data: Dict[str, Any] = {"properties": {"field_1": "value_1"}}
+        make_request_mock: MagicMock = MagicMock()
+        make_request_mock.make_request.return_value = data
+        weather_client_mock.return_value = make_request_mock
+
+        stations_fields: Dict[str, str] = {
+            "station_id": SELECTED_STATION_ID,
+            "station_name": "Lafayette High School",
+            "station_timezone": "America/New_York",
+        }
+        extract_stations_fields_mock.return_value = stations_fields
 
         response: str = utils.extract_stations_data(ts=self.ts)
-        expected_response: str = "None"
+        expected_response: str = raw_file_path
 
         assert response == expected_response
 
-    # @patch("include.scripts.weather.utils.Variable")
-    # @patch("include.scripts.weather.utils.WeatherClient")
-    # @patch("include.scripts.weather.utils.extract_stations_fields")
-    # @patch("include.scripts.weather.utils.save_data_to_disk")
-    # def test_extract_weather_obs_data(
-    #     self,
-    #     save_data_to_disk_mock: MagicMock,
-    #     extract_stations_fields_mock: MagicMock,
-    #     weather_client_mock: MagicMock,
-    #     variable_mock: MagicMock
-    #     ) -> None:
-    #     """Test for extract_weather_obs_data function."""
+        weather_client_mock.return_value.make_request.assert_called_once_with(
+            endpoint=f"{WeatherEndpoints.STATIONS.value}/{SELECTED_STATION_ID}"
+        )
+        extract_stations_fields_mock.assert_called_once_with(data["properties"])
+        save_data_to_disk_mock.assert_called_once_with(
+            data=[stations_fields], table_name="stations", ts=self.ts
+        )
 
-    #     response: str = utils.extract_weather_obs_data(
-    #         ts=self.ts,
-    #         start=self.start_date
-    #     )
-    #     expected_response: str = "None"
+    @patch("include.scripts.weather.utils.Variable")
+    @patch("include.scripts.weather.utils.WeatherClient")
+    @patch("include.scripts.weather.utils.extract_weather_fields")
+    @patch("include.scripts.weather.utils.save_data_to_disk")
+    def test_extract_weather_obs_data(
+        self,
+        save_data_to_disk_mock: MagicMock,
+        extract_weather_fields_mock: MagicMock,
+        weather_client_mock: MagicMock,
+        variable_mock: MagicMock,
+    ) -> None:
+        """Test for extract_weather_obs_data function."""
+        raw_file_path: str = "path/raw_file_mock.parquet"
+        save_data_to_disk_mock.return_value = raw_file_path
 
-    #     assert response == expected_response
+        data: Dict[str, Any] = {"features": [{"field_1": "value_1"}]}
+        make_request_mock: MagicMock = MagicMock()
+        make_request_mock.make_request.return_value = data
+        weather_client_mock.return_value = make_request_mock
 
-    #     extracted_data: List[Dict[str, str]] = [extract_stations_fields(data["properties"])]
+        weather_obs_fields: Dict[str, Union[str, float]] = {
+            "station_id": SELECTED_STATION_ID,
+            "latitude": -83.17,
+            "longitude": 30.05,
+            "observation_timestamp": "2024-08-30T09:20:00+00:00",
+            "temperature": 22.39,
+            "wind_speed": 0,
+            "humidity": NULL_VALUE,
+        }
+        extract_weather_fields_mock.return_value = weather_obs_fields
 
-    # saved_file_path: str = save_data_to_disk(
+        response: str = utils.extract_weather_obs_data(
+            ts=self.ts, start=self.start_date
+        )
+        expected_response: str = raw_file_path
+
+        assert response == expected_response
+
+        weather_client_mock.return_value.make_request.assert_called_once_with(
+            endpoint=os.path.join(
+                WeatherEndpoints.STATIONS.value,
+                SELECTED_STATION_ID,
+                WeatherEndpoints.OBSERVATIONS.value,
+            ),
+            params={"start": self.start_date},
+        )
+        extract_weather_fields_mock.assert_called_once_with(data["features"][0])
+        save_data_to_disk_mock.assert_called_once_with(
+            data=[weather_obs_fields], table_name="weather_obs", ts=self.ts
+        )
+        variable_mock.set.assert_called_once_with(
+            "weather_obs_last_date", "2024-08-30T09:20:00+00:00"
+        )
+
+        # When there is no new data to ingest
+        make_request_mock.make_request.return_value = []
+        try:
+            utils.extract_weather_obs_data(ts=self.ts, start=self.start_date)
+        except AirflowSkipException as error:
+            assert str(error) == "Skipping downstream tasks."
+        else:
+            raise AssertionError("Function did not raise an AirflowSkipException")

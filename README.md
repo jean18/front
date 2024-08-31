@@ -97,6 +97,10 @@ For the first time will ingest the last 7 days, and consequent runs will ingest 
 
 Finally run the Analytic part in the file `database.ipynb` to retrieve the result of the two quieres asked in the exercise.
 
+Additionals things tha could improve the pipeline:
+- Data Quality: I wanted to try `soda` (or something similar) for data quality but I was running out of time.
+- Errors: We could add `on_failure_callback` to send alerts trough `email` or `slack`.
+
 ### Test
 To run the tests please install pytest:
 * `pip install pytest`

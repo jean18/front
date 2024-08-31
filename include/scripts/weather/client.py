@@ -1,4 +1,4 @@
-"""Util class to interact with Weather API."""
+"""Util class to interact with Weather API and retrieve data."""
 import logging
 from enum import Enum
 from typing import Any, Dict, Optional

@@ -1,4 +1,4 @@
-"""Utils functions for DAGs"""
+"""Utils functions for DAGs."""
 from datetime import datetime, timedelta
 from typing import Any, Dict
 

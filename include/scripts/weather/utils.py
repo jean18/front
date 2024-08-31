@@ -86,7 +86,7 @@ def extract_weather_obs_data(ts: str, start: str) -> str:
         endpoint=station_obs_endpoint, params=params
     )
 
-    if len(extracted_data_sorted) == 0:
+    if len(data) == 0:
         logging.info("No new data to ingest.")
         raise AirflowSkipException("Skipping downstream tasks.")
 

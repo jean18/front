@@ -1,8 +1,5 @@
-"""
-DAG to load data between Weather API and Duck DB.
-"""
-import os
-from datetime import datetime, timedelta
+"""DAG to load data between Weather API and Duck DB."""
+from datetime import datetime
 from typing import Any, Dict
 
 from airflow import DAG
