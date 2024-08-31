@@ -167,6 +167,3 @@ cython_debug/
 
 # Database
 include/database/
-
-# Images
-imgs/
